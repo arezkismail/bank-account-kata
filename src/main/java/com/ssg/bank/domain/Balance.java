@@ -14,4 +14,7 @@ public record Balance(BigDecimal balance) {
         return new Balance(balance.add(amount));
     }
 
+    public Balance substact(Amount amount) {
+        return new Balance(balance.subtract(amount.amount()));
+    }
 }
