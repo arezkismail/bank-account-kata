@@ -31,12 +31,12 @@ public class Account {
     }
 
     public void deposit(Amount amount) {
-        balance = balance.add(amount.amount());
+        balance = balance.add(amount.value());
         operationLines.add(new OperationLine(new Operation(DEPOSIT, amount, now()), balance));
     }
 
     public void withdrawal(Amount amount) {
-        if(balance.balance().compareTo(amount.amount()) == -1) {
+        if(balance.value().compareTo(amount.value()) == -1) {
             throw new BalanceNotSufficientException("balance not sufficient");
         }
         balance = balance.substact(amount);

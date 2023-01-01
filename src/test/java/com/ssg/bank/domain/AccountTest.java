@@ -24,7 +24,7 @@ public class AccountTest {
         //When
         Account account = new Account(balance, NOW);
         //Then
-        assertThat(account.getBalance().balance()).isZero();
+        assertThat(account.getBalance().value()).isZero();
         assertThat(account.getCreationDate()).isEqualTo(NOW);
     }
 
@@ -50,7 +50,7 @@ public class AccountTest {
         account.deposit(amount);
 
         //Then
-        assertThat(account.getBalance().balance()).isEqualTo(BigDecimal.TEN);
+        assertThat(account.getBalance().value()).isEqualTo(BigDecimal.TEN);
     }
 
     @Test
@@ -64,7 +64,7 @@ public class AccountTest {
         account.withdrawal(amount);
 
         //Then
-        assertThat(account.getBalance().balance()).isEqualTo(BigDecimal.ZERO);
+        assertThat(account.getBalance().value()).isEqualTo(BigDecimal.ZERO);
     }
 
     @Test

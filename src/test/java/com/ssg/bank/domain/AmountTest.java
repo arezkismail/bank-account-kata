@@ -25,7 +25,7 @@ public class AmountTest {
     }
 
     @Test
-    void create_zero_amount_with_account_of_zero_balance_should_throw_insufficientAmountException() {
+    void create_amount_with_zero_value_should_throw_insufficientAmountException() {
         //Given
         BigDecimal nullValue = BigDecimal.ZERO;
 
