@@ -1,10 +1,6 @@
 package com.ssg.bank.domain;
 
-import com.ssg.bank.exception.BalanceNotSufficientException;
-
-import java.time.LocalDateTime;
-import java.util.LinkedList;
-import java.util.List;
+import java.time.Clock;
 
 import static com.ssg.bank.domain.enums.OperationType.DEPOSIT;
 import static com.ssg.bank.domain.enums.OperationType.WITHDRAWAL;
@@ -13,41 +9,41 @@ import static java.time.LocalDateTime.now;
 public class Account {
 
     private Balance balance;
-    private LocalDateTime creationDate;
-    private List<OperationLine> operationLines;
+    private Clock clock;
 
-    public Account(Balance balance, LocalDateTime creationDate) {
+    private Statement statement;
+
+    public Account(Balance balance) {
         this.balance = balance;
-        this.creationDate = creationDate;
-        this.operationLines = new LinkedList<>();
+        this.clock = Clock.systemDefaultZone();
+        this.statement = new Statement();
+    }
+
+    public Account(Balance balance, Clock clock) {
+        this.balance = balance;
+        this.clock = clock;
+        this.statement = new Statement();
     }
 
     public Balance getBalance() {
         return balance;
     }
 
-    public LocalDateTime getCreationDate() {
-        return creationDate;
-    }
-
     public void deposit(Amount amount) {
-        balance = balance.add(amount.value());
-        operationLines.add(new OperationLine(new Operation(DEPOSIT, amount, now()), balance));
+        balance = balance.add(amount);
+        statement.addOperation(new Operation(DEPOSIT, amount, now(clock)), balance);
     }
 
     public void withdrawal(Amount amount) {
-        if(balance.value().compareTo(amount.value()) == -1) {
-            throw new BalanceNotSufficientException("balance not sufficient");
-        }
         balance = balance.substact(amount);
-        operationLines.add(new OperationLine(new Operation(WITHDRAWAL, amount, now()), balance));
+        statement.addOperation(new Operation(WITHDRAWAL, amount, now(clock)), balance);
     }
 
-    public List<OperationLine> getOperationLines() {
-        return operationLines;
+    public Statement getStatement() {
+        return statement;
     }
 
     public void print(IOperationPrinter operationPrinter) {
-        operationPrinter.print(operationLines);
+        operationPrinter.print(statement);
     }
 }

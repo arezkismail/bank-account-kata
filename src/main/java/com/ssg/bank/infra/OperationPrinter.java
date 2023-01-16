@@ -2,10 +2,9 @@ package com.ssg.bank.infra;
 
 import com.ssg.bank.domain.IOperationPrinter;
 import com.ssg.bank.domain.Operation;
-import com.ssg.bank.domain.OperationLine;
+import com.ssg.bank.domain.Statement;
 
 import java.time.format.DateTimeFormatter;
-import java.util.List;
 
 public class OperationPrinter implements IOperationPrinter {
 
@@ -15,12 +14,12 @@ public class OperationPrinter implements IOperationPrinter {
     private DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern(DATE_FORMAT);
 
     @Override
-    public void print(List<OperationLine> operationLines) {
+    public void print(Statement statement) {
         StringBuilder operationPrinter = new StringBuilder(OPERATION_HEADER+"\n");
-        operationLines.forEach(operationLine -> {
+        statement.getOperationLines().forEach(operationLine -> {
             Operation operation = operationLine.operation();
-            String line = String.format(OPERATION_LINE, operation.getType(),
-                    operation.getDate().format(dateFormatter), operation.getAmount().value(),
+            String line = String.format(OPERATION_LINE, operation.type(),
+                    operation.date().format(dateFormatter), operation.amount().value(),
                     operationLine.balance().value());
             operationPrinter.append(line);
         });

@@ -1,11 +1,14 @@
 package com.ssg.bank.domain;
 
-import com.ssg.bank.domain.mocks.MockOperationPrinter;
+import com.ssg.bank.domain.mocks.FakeOperationPrinter;
 import com.ssg.bank.exception.BalanceNotSufficientException;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.util.LinkedList;
 
 import static com.ssg.bank.domain.enums.OperationType.DEPOSIT;
 import static com.ssg.bank.domain.enums.OperationType.WITHDRAWAL;
@@ -15,17 +18,17 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class AccountTest {
 
-    private static final LocalDateTime NOW = now();
+    private final static Clock fixedClock = Clock.fixed(Instant.now(), ZoneId.systemDefault());
+
 
     @Test
     void create_account_with_zero_balance() {
         //Given
         Balance balance = new Balance(BigDecimal.ZERO);
         //When
-        Account account = new Account(balance, NOW);
+        Account account = new Account(balance);
         //Then
-        assertThat(account.getBalance().value()).isZero();
-        assertThat(account.getCreationDate()).isEqualTo(NOW);
+        assertThat(account.getBalance()).isEqualTo(balance);
     }
 
     @Test
@@ -33,10 +36,9 @@ public class AccountTest {
         //Given
         Balance balance = new Balance(BigDecimal.TEN);
         //When
-        Account account = new Account(balance, NOW);
+        Account account = new Account(balance);
         //Then
         assertThat(account.getBalance()).isEqualTo(balance);
-        assertThat(account.getCreationDate()).isEqualTo(NOW);
     }
 
     @Test
@@ -44,34 +46,34 @@ public class AccountTest {
         //Given
         Amount amount = new Amount(BigDecimal.TEN);
         Balance balance = new Balance(BigDecimal.ZERO);
-        Account account = new Account(balance, NOW);
+        Account account = new Account(balance);
 
         //When
         account.deposit(amount);
 
         //Then
-        assertThat(account.getBalance().value()).isEqualTo(BigDecimal.TEN);
+        assertThat(account.getBalance()).isEqualTo(new Balance(BigDecimal.TEN));
     }
 
     @Test
     void withdrawal_ten_amount_with_account_of_ten_balance() {
         //Given
         Balance  balance = new Balance(BigDecimal.TEN);
-        Account account = new Account(balance, NOW);
+        Account account = new Account(balance);
         Amount amount = new Amount(BigDecimal.TEN);
 
         //When
         account.withdrawal(amount);
 
         //Then
-        assertThat(account.getBalance().value()).isEqualTo(BigDecimal.ZERO);
+        assertThat(account.getBalance()).isEqualTo(new Balance(BigDecimal.ZERO));
     }
 
     @Test
     void withdrawal_ten_amount_with_account_of_zero_balance_should_throw_balanceNotSufficientException() {
         //Given
         Balance  balance = new Balance(BigDecimal.ZERO);
-        Account account = new Account(balance, NOW);
+        Account account = new Account(balance);
         Amount amount = new Amount(BigDecimal.TEN);
 
         //When
@@ -79,35 +81,37 @@ public class AccountTest {
             account.withdrawal(amount);
         });
 
-
         //Then
         assertThat(balanceNotSufficientException.getMessage()).isEqualTo("balance not sufficient");
     }
 
     @Test
-    void create_account_should_initialize_operation_list() {
+    void create_account_should_initialize_statement_with_empty_operation_lines() {
         //Given
         Balance balance = new Balance(BigDecimal.ZERO);
         //When
-        Account account = new Account(balance, NOW);
+        Account account = new Account(balance);
         //Then
-        assertThat(account.getOperationLines()).isEmpty();
+        assertThat(account.getStatement().getOperationLines()).isEqualTo(new LinkedList<>());
     }
+
 
     @Test
     void deposit_ten_amount_should_add_this_operation() {
         //Given
         Amount amount = new Amount(BigDecimal.TEN);
         Balance balance = new Balance(BigDecimal.ZERO);
-        Account account = new Account(balance, NOW);
+        Account account = new Account(balance, fixedClock);
+        FakeOperationPrinter operationPrinter = new FakeOperationPrinter();
+
 
         //When
         account.deposit(amount);
+        account.print(operationPrinter);
 
         //Then
-        assertThat(account.getOperationLines()).hasSize(1);
-        assertThat(account.getOperationLines().get(0).operation().getAmount()).isEqualTo(amount);
-        assertThat(account.getOperationLines().get(0).operation().getType()).isEqualTo(DEPOSIT);
+       assertThat(operationPrinter.getOperationLines().get(0)).isEqualTo(new OperationLine(new Operation(DEPOSIT, amount, now(fixedClock)), balance.add(amount)));
+
     }
 
     @Test
@@ -115,15 +119,15 @@ public class AccountTest {
         //Given
         Amount amount = new Amount(BigDecimal.TEN);
         Balance balance = new Balance(BigDecimal.TEN);
-        Account account = new Account(balance, NOW);
+        Account account = new Account(balance, fixedClock);
+        FakeOperationPrinter operationPrinter = new FakeOperationPrinter();
 
         //When
         account.withdrawal(amount);
+        account.print(operationPrinter);
 
         //Then
-        assertThat(account.getOperationLines()).hasSize(1);
-        assertThat(account.getOperationLines().get(0).operation().getAmount()).isEqualTo(amount);
-        assertThat(account.getOperationLines().get(0).operation().getType()).isEqualTo(WITHDRAWAL);
+        assertThat(operationPrinter.getOperationLines().get(0)).isEqualTo(new OperationLine(new Operation(WITHDRAWAL, amount, now(fixedClock)), balance.substact(amount)));
     }
 
     @Test
@@ -132,37 +136,18 @@ public class AccountTest {
         Amount amountDeposit = new Amount(BigDecimal.TEN);
         Amount amountWithdrawal = new Amount(BigDecimal.TEN);
         Balance balance = new Balance(BigDecimal.TEN);
-        Account account = new Account(balance, NOW);
+        Account account = new Account(balance, fixedClock);
+        FakeOperationPrinter operationPrinter = new FakeOperationPrinter();
 
         //When
         account.deposit(amountDeposit);
         account.withdrawal(amountWithdrawal);
-
-        //Then
-        assertThat(account.getOperationLines()).hasSize(2);
-        Operation operationDeposit = account.getOperationLines().get(0).operation();
-        Operation operationWithdrawal = account.getOperationLines().get(1).operation();
-        assertThat(operationDeposit.getAmount()).isEqualTo(amountDeposit);
-        assertThat(operationDeposit.getType()).isEqualTo(DEPOSIT);
-        assertThat(operationWithdrawal.getAmount()).isEqualTo(amountWithdrawal);
-        assertThat(operationWithdrawal.getType()).isEqualTo(WITHDRAWAL);
-    }
-
-    @Test
-    void should_print_deposit_operation() {
-        //Given
-        Amount amount = new Amount(BigDecimal.TEN);
-        Balance balance = new Balance(BigDecimal.TEN);
-        Account account = new Account(balance, NOW);
-        MockOperationPrinter operationPrinter = new MockOperationPrinter();
-        account.deposit(amount);
-
-        //When
         account.print(operationPrinter);
 
         //Then
-        assertThat(operationPrinter.getOperations().get(0).operation().getAmount()).isEqualTo(amount);
-        assertThat(operationPrinter.getOperations().get(0).operation().getType()).isEqualTo(DEPOSIT);
+        assertThat(operationPrinter.getOperationLines())
+                .containsExactly(new OperationLine(new Operation(DEPOSIT, amountDeposit, now(fixedClock)), new Balance(new BigDecimal(20))),
+                        new OperationLine(new Operation(WITHDRAWAL, amountWithdrawal, now(fixedClock)),new Balance(BigDecimal.TEN)));
     }
 
 }

@@ -32,7 +32,7 @@ public class OperationPrinterTest {
         Amount amountDeposit = new Amount(BigDecimal.TEN);
         Amount amountWithdrawal = new Amount(BigDecimal.TEN);
         Balance balance = new Balance(BigDecimal.TEN);
-        Account account = new Account(balance, NOW);
+        Account account = new Account(balance);
         account.deposit(amountDeposit);
         account.withdrawal(amountWithdrawal);
 
